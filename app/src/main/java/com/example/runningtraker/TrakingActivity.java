@@ -16,6 +16,7 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.ResolvableApiException;
@@ -58,6 +59,9 @@ public class TrakingActivity extends AppCompatActivity implements OnMapReadyCall
     private LocationRequest locationRequest;
     GoogleMap googleMap;
     Button startButton, stopButton;
+    double totalDistance=0;
+
+    TextView textview;
 
     private Context context;
 
@@ -71,6 +75,7 @@ public class TrakingActivity extends AppCompatActivity implements OnMapReadyCall
 
         startButton = findViewById(R.id.startButton);
         stopButton = findViewById(R.id.stopButton);
+        textview = findViewById(R.id.totalDistance);
 
         context = this;
         init();
@@ -79,6 +84,33 @@ public class TrakingActivity extends AppCompatActivity implements OnMapReadyCall
 //        MapView mapFragment = findViewById(R.id.map);
         mapFragment.getMapAsync(this);
         updateValuesFromBundle(savedInstanceState);
+    }
+
+    public static double distance(double lat1,double lat2, double lon1,double lon2){
+
+        // The math module contains a function
+        // named toRadians which converts from
+        // degrees to radians.
+        lon1 = Math.toRadians(lon1);
+        lon2 = Math.toRadians(lon2);
+        lat1 = Math.toRadians(lat1);
+        lat2 = Math.toRadians(lat2);
+
+        // Haversine formula
+        double dlon = lon2 - lon1;
+        double dlat = lat2 - lat1;
+        double a = Math.pow(Math.sin(dlat / 2), 2)
+                + Math.cos(lat1) * Math.cos(lat2)
+                * Math.pow(Math.sin(dlon / 2),2);
+
+        double c = 2 * Math.asin(Math.sqrt(a));
+
+        // Radius of earth in kilometers. Use 3956
+        // for miles
+        double r = 6371;
+
+        // calculate the result
+        return(c * r);
     }
 
     private void updateValuesFromBundle(Bundle savedInstanceState) {
@@ -164,6 +196,11 @@ public class TrakingActivity extends AppCompatActivity implements OnMapReadyCall
         if(polylines.get(polylines.size()-1).size() == 1){
             polylines.get(polylines.size()-1).add(value);
         }
+        ArrayList<LatLng> lastLine = polylines.get(polylines.size()-1);
+        LatLng last = lastLine.get(lastLine.size()-1);
+        LatLng sLast = lastLine.get(lastLine.size()-2);
+
+        totalDistance += distance(last.latitude, sLast.latitude, last.longitude, sLast.longitude);
 
         Log.v("Traking Activity", value.latitude+" "+value.longitude);
         updateUI();
@@ -174,6 +211,7 @@ public class TrakingActivity extends AppCompatActivity implements OnMapReadyCall
         LatLng last = lastLine.get(lastLine.size()-1);
         LatLng sLast = lastLine.get(lastLine.size()-2);
 
+        textview.setText(String.valueOf(totalDistance)+" km");
         Polyline polyline = googleMap.addPolyline(new PolylineOptions().add(
                 last,
                 sLast
